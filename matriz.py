@@ -10,7 +10,8 @@ def generar_matriz_nula(filas, columnas):
         for j in range(columnas):
             fila.append(0)
         matriz.append(fila)
-        print(matriz)   
+    print(matriz)  
+    print() 
     return matriz
 mmmatriz = generar_matriz_nula(10,10)
 import random
@@ -48,19 +49,24 @@ def camino_aleatorio(matriz, punto_inicio, punto_final):
 
     return ruta
 
-print(camino_aleatorio(generar_matriz_nula(10,10),(0,0),(9,9)))
+#print(camino_aleatorio(generar_matriz_nula(10,10),(0,0),(9,9)))
 
 def reemplazar_espacios(matriz, lista_no_reemplazables):
+    filas = len(matriz)
     columnas = len(matriz[0])
     nueva_matriz = []
-    for i in range(len(matriz)):
+    posiciones_no_reemplazables = set(lista_no_reemplazables)
+
+    for i in range(filas):
         fila = []
         for j in range(columnas):
-            if matriz[i][j] in lista_no_reemplazables:
-                fila.append(matriz[i][j])
+            if (i, j) in posiciones_no_reemplazables:
+                fila.append(matriz[i][j])  # mantiene el 0 (o el valor original)
             else:
-                fila.append(random.randint(0,3))
-            nueva_matriz.append(fila)
+                fila.append(random.randint(0, 3))
+        nueva_matriz.append(fila)
+
     return nueva_matriz
+
 
 print(reemplazar_espacios(mmmatriz, camino_aleatorio(mmmatriz,(0,0), (9,9))))
