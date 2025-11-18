@@ -14,7 +14,6 @@ def generar_matriz_nula(filas, columnas):
     print() 
     return matriz
 mmmatriz = generar_matriz_nula(10,10)
-import random
 
 def camino_aleatorio(matriz, punto_inicio, punto_final):
     n = len(matriz)
