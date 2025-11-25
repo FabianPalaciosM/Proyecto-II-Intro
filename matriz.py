@@ -48,8 +48,6 @@ def camino_aleatorio(matriz, punto_inicio, punto_final):
 
     return ruta
 
-#print(camino_aleatorio(generar_matriz_nula(10,10),(0,0),(9,9)))
-
 def reemplazar_espacios(matriz, lista_no_reemplazables):
     filas = len(matriz)
     columnas = len(matriz[0])
@@ -60,7 +58,7 @@ def reemplazar_espacios(matriz, lista_no_reemplazables):
         fila = []
         for j in range(columnas):
             if (i, j) in posiciones_no_reemplazables:
-                fila.append(matriz[i][j])  # mantiene el 0 (o el valor original)
+                fila.append(matriz[i][j])  # mantiene el 0 
             else:
                 fila.append(random.randint(0, 3))
         nueva_matriz.append(fila)
