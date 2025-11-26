@@ -1,69 +1,96 @@
 import random
 
-def generar_matriz_nula(filas, columnas):
-    #E: Cantidad (int) de filas y columnas de la matriz
-    #S: Una matriz
-    #Crea una matriz nula, con 0 en todos sus espacios
-    matriz=[]
-    for i in range(filas):
-        fila=[]
-        for j in range(columnas):
-            fila.append(0)
-        matriz.append(fila)
-    print(matriz)  
-    print() 
-    return matriz
-mmmatriz = generar_matriz_nula(10,10)
+def camino_aleatorio_seguro(filas, columnas, inicio, final):
+    #E: Cantidad de filas y columnas. El inicio y final son tuplas (fila, columna)
+    #S: Lista con las coordenadas para llegar al final
+    #R:
+    #Crea un camino entre el inicio y el final
 
-def camino_aleatorio(matriz, punto_inicio, punto_final):
-    n = len(matriz)
-    ruta = [punto_inicio]
-    posicion_actual = punto_inicio
-    visitados = {punto_inicio}
+    ruta = [inicio]
+    visitados = {inicio}
 
-    while posicion_actual != punto_final:
-        fila, columna = posicion_actual
+    movimientos = [(-1,0), (1,0), (0,-1), (0,1)]
+
+    while ruta[-1] != final:
+        fila_actual, columna_actual = ruta[-1]
 
         opciones = []
-        if fila > 0:
-            opciones.append((fila - 1, columna))
-        if fila < n - 1:
-            opciones.append((fila + 1, columna))
-        if columna > 0:
-            opciones.append((fila, columna - 1))
-        if columna < len(matriz[0]) - 1:
-            opciones.append((fila, columna + 1))
+        for mov_fila, mov_columna in movimientos:
+            nueva_fila = fila_actual + mov_fila
+            nueva_columna = columna_actual + mov_columna
 
-        opciones_validas = [p for p in opciones if p not in visitados]
+            if 0 <= nueva_fila < filas and 0 <= nueva_columna < columnas:
+                if (nueva_fila, nueva_columna) not in visitados:
+                    opciones.append((nueva_fila, nueva_columna))
 
-        if opciones_validas:
-            random.shuffle(opciones_validas)
-            siguiente = opciones_validas[0]
+        if opciones:
+            siguiente = random.choice(opciones)
             ruta.append(siguiente)
             visitados.add(siguiente)
-            posicion_actual = siguiente
         else:
             ruta.pop()
-            posicion_actual = ruta[-1]
+            if not ruta:
+                return camino_aleatorio_seguro(filas, columnas, inicio, final)
 
     return ruta
 
-def reemplazar_espacios(matriz, lista_no_reemplazables):
+
+def matriz_vacia(filas, columnas):
+    #E: Cantidad de filas y columnas
+    #S: Matriz con None en todas sus casillas
+    #R:
+    # Crea una matriz con None para ser rellenada después
+    return [[None for i in range(columnas)] for j in range(filas)]
+
+
+def insertar_camino_en_matriz(matriz, ruta):
+    #E: La matriz del mapa, la ruta para llegar al final(lista de tuplas)
+    #S:
+    #R:
+    # Mete 0 en las casillas del camino
+    for fila, columna in ruta:
+        matriz[fila][columna] = 0
+
+
+def llenar_mapa(matriz):
+    #E: La matriz del mapa
+    #S:
+    #R:
+    # Rellena las casillas vacías con valores aleatorios 0–3
     filas = len(matriz)
     columnas = len(matriz[0])
-    nueva_matriz = []
-    posiciones_no_reemplazables = set(lista_no_reemplazables)
 
-    for i in range(filas):
-        fila = []
-        for j in range(columnas):
-            if (i, j) in posiciones_no_reemplazables:
-                fila.append(matriz[i][j])  # mantiene el 0 
-            else:
-                fila.append(random.randint(0, 3))
-        nueva_matriz.append(fila)
-
-    return nueva_matriz
+    for fila in range(filas):
+        for columna in range(columnas):
+            if matriz[fila][columna] is None:
+                matriz[fila][columna] = random.randint(0, 3)
 
 
-print(reemplazar_espacios(mmmatriz, camino_aleatorio(mmmatriz,(0,0), (9,9))))
+def colocar_salida(matriz, final):
+    #E: La matriz del mapa. La tupla que representa la salida
+    #S:
+    #R:
+    # Pone 4 en el espacio de la salida para más tarde asignarle una clase especial
+    fila, columna = final
+    matriz[fila][columna] = 4
+
+
+def generar_mapa(filas, columnas):
+    #E: Cantidad de filas y columnas
+    #S: Matriz final lista con camino, terrenos y salida
+    #R:
+    # Genera un mapa completo válido con un camino asegurado y una salida
+
+    inicio = (0, 0)
+    final = (filas - 1, columnas - 1)
+
+    matriz = matriz_vacia(filas, columnas)
+
+    ruta = camino_aleatorio_seguro(filas, columnas, inicio, final)
+    insertar_camino_en_matriz(matriz, ruta)
+
+    llenar_mapa(matriz)
+
+    colocar_salida(matriz, final)
+
+    return matriz
