@@ -1,14 +1,16 @@
 {
     "cantidad_de_filas":10,
     "cantidad_de_columnas":10,
-    "cantidad_de_enemigos":3,
-    "cantidad_trampas":3,
     "energia":100,
-    "energia_gastada_corriendo":4,
+    "energia_gastada_corriendo":5,
     "energia_recuperada":2,
+    "cantidad_trampas":3,
     "cooldown_trampas":5,
-    "velocidad_jugador":10,
-    "velocidad_enemigo":10,
+    "velocidad_jugador":1,
     "tiempo_respawneo_enemigos":10,
-    "dificultad":"normal"
+    "dificultad":{"facil":{"cantidad_de_enemigos":1, "velocidad_enemigo":2},
+                  "media":{"cantidad_de_enemigos":3, "velocidad_enemigo":4},
+                  "dificil":{"cantidad_de_enemigos":5, "velocidad_enemigo":6}},
+    "puntaje":{"enemigo_eliminado":20,
+               "enemigo_escapado":-20}   
 }
