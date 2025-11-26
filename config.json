@@ -1,0 +1,10 @@
+{
+    "cantidad_de_filas":10,
+    "cantidad_de_columnas":10,
+    "cantidad_de_enemigos":3,
+    "cantidad_trampas":3,
+    "cooldown_trampas":5,
+    "velocidad_jugador":10,
+    "velocidad_enemigo":10,
+    "tiempo_respawneo_enemigos":10
+}
