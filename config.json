@@ -3,8 +3,12 @@
     "cantidad_de_columnas":10,
     "cantidad_de_enemigos":3,
     "cantidad_trampas":3,
+    "energia":100,
+    "energia_gastada_corriendo":4,
+    "energia_recuperada":2,
     "cooldown_trampas":5,
     "velocidad_jugador":10,
     "velocidad_enemigo":10,
-    "tiempo_respawneo_enemigos":10
+    "tiempo_respawneo_enemigos":10,
+    "dificultad":"normal"
 }
