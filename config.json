@@ -1,16 +1,18 @@
 {
-    "cantidad_de_filas":10,
-    "cantidad_de_columnas":10,
-    "energia":100,
-    "energia_gastada_corriendo":5,
-    "energia_recuperada":2,
-    "cantidad_trampas":3,
-    "cooldown_trampas":5,
-    "velocidad_jugador":1,
-    "tiempo_respawneo_enemigos":10,
-    "dificultad":{"facil":{"cantidad_de_enemigos":1, "velocidad_enemigo":2},
-                  "media":{"cantidad_de_enemigos":3, "velocidad_enemigo":4},
-                  "dificil":{"cantidad_de_enemigos":5, "velocidad_enemigo":6}},
-    "puntaje":{"enemigo_eliminado":20,
-               "enemigo_escapado":-20}   
-}
+    "cantidad_de_filas": 25,
+    "cantidad_de_columnas": 25,
+    "energia_inicial": 100,
+    "energia_gastada_corriendo": 5,
+    "energia_recuperada": 2,
+    "cantidad_trampas": 3,
+    "cooldown_trampas": 5,
+    "tiempo_respawneo_enemigos": 10,
+    "velocidad_jugador": 0.4, 
+    "velocidad_jugador_corriendo": 0.35,
+    "dificultad": {
+                   "facil": {"cantidad_de_enemigos": 2,"velocidad_enemigo": 0.4},
+                   "media": {"cantidad_de_enemigos": 4, "velocidad_enemigo": 0.35},
+                   "dificil": {"cantidad_de_enemigos": 6, "velocidad_enemigo": 0.3}
+                  },
+    "puntaje": {"enemigo_eliminado": 20, "enemigo_escapado": -20}
+} 
