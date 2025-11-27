@@ -98,5 +98,3 @@ def generar_mapa(filas, columnas):
     colocar_salida(matriz, final)
 
     return matriz
-
-print(generar_mapa())
