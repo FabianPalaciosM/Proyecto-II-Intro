@@ -76,21 +76,18 @@ def colocar_salida(matriz, final):
     matriz[fila][columna] = 4
 
 
+
 def generar_mapa(filas, columnas):
-    #E: Cantidad de filas y columnas
-    #S: Matriz final lista con camino, terrenos y salida
-    #R:
-    # Genera un mapa completo válido con un camino asegurado y una salida
-
-    filas = config.CANTIDAD_DE_FILAS
-    columnas = config.CANTIDAD_DE_COLUMNAS
-
+    #E: Cantidad de filas y columnas 
+    #S: Matriz final lista con camino, terrenos y salida 
+    #R: 
+    # # Genera un mapa completo válido con un camino asegurado y una salida
     inicio = (0, 0)
     final = (filas-1, columnas-1)
 
     matriz = matriz_vacia(filas, columnas)
 
-    ruta = camino_aleatorio(filas, columnas, inicio, final=(config.CANTIDAD_DE_FILAS-1, config.CANTIDAD_DE_COLUMNAS-1))
+    ruta = camino_aleatorio(filas, columnas, inicio, final)
     insertar_camino_en_matriz(matriz, ruta)
 
     llenar_mapa(matriz)
