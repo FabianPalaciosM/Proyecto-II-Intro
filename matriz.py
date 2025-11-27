@@ -1,6 +1,7 @@
 import random
+import config
 
-def camino_aleatorio_seguro(filas, columnas, inicio, final):
+def camino_aleatorio(filas, columnas, inicio, final):
     #E: Cantidad de filas y columnas. El inicio y final son tuplas (fila, columna)
     #S: Lista con las coordenadas para llegar al final
     #R:
@@ -30,7 +31,7 @@ def camino_aleatorio_seguro(filas, columnas, inicio, final):
         else:
             ruta.pop()
             if not ruta:
-                return camino_aleatorio_seguro(filas, columnas, inicio, final)
+                return camino_aleatorio(filas, columnas, inicio, final)
 
     return ruta
 
@@ -81,12 +82,15 @@ def generar_mapa(filas, columnas):
     #R:
     # Genera un mapa completo válido con un camino asegurado y una salida
 
+    filas = config.CANTIDAD_DE_FILAS
+    columnas = config.CANTIDAD_DE_COLUMNAS
+
     inicio = (0, 0)
-    final = (filas - 1, columnas - 1)
+    final = (filas-1, columnas-1)
 
     matriz = matriz_vacia(filas, columnas)
 
-    ruta = camino_aleatorio_seguro(filas, columnas, inicio, final)
+    ruta = camino_aleatorio(filas, columnas, inicio, final=(config.CANTIDAD_DE_FILAS-1, config.CANTIDAD_DE_COLUMNAS-1))
     insertar_camino_en_matriz(matriz, ruta)
 
     llenar_mapa(matriz)
@@ -95,4 +99,4 @@ def generar_mapa(filas, columnas):
 
     return matriz
 
-print(generar_mapa(10,10))
+print(generar_mapa())
