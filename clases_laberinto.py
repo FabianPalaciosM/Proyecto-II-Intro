@@ -12,12 +12,17 @@ class Casilla:
     def caminable_por_enemigo(self):
         #True o False si el enemigo puede pasar por ella
         raise NotImplementedError("No esta hecho")
+    
+    def es_salida(self):
+        #False si la casilla no es la salida, True si sí es
+        return False
+    
+    def se_puede_colocar_trampa(self):
+        #True si se puede colocar una trampa, False si no
+        return False
 
     def __str__(self):
         return f"{self.tipo} en la casilla[{self.fila}][{self.columna}]"
-    
-casi = Casilla(1,1,"liana")
-casi.caminable_por_enemigo()
 
 class Camino(Casilla):
     def __init__(self, fila, columna):
@@ -27,6 +32,9 @@ class Camino(Casilla):
         return True
 
     def caminable_por_enemigo(self):
+        return True
+    
+    def se_puede_colocar_trampa(self):
         return True
     
     
@@ -60,3 +68,15 @@ class Tunel(Casilla):
     def caminable_por_enemigo(self):
         return False
     
+class Salida(Casilla):
+    def __init__(self, fila, columna):
+        super().__init__(fila, columna, "salida")
+
+    def caminable_por_jugador(self):
+        return True
+
+    def caminable_por_enemigo(self):
+        return False
+
+    def es_salida(self):
+        return True
