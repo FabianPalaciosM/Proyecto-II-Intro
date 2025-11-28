@@ -25,14 +25,14 @@ def convertir_matriz_a_clases(matriz_numerica):
             elif matriz_numerica[i][j] == 4:
                 matriz_clases[i][j] = Salida(i, j)
 
-    return matriz_clases, matriz_numerica 
+    return matriz_clases
 
 
 
 def generar_mapa_completo():
     matriz_numerica = generar_mapa(config.CANTIDAD_DE_FILAS, config.CANTIDAD_DE_COLUMNAS)
-    #print(matriz_numerica)
-    matriz_de_clases, m = convertir_matriz_a_clases(matriz_numerica)
+
+    matriz_de_clases = convertir_matriz_a_clases(matriz_numerica)
 
     return matriz_de_clases
  
