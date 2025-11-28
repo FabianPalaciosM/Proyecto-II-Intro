@@ -14,5 +14,5 @@
                    "media": {"cantidad_de_enemigos": 4, "velocidad_enemigo": 0.35},
                    "dificil": {"cantidad_de_enemigos": 6, "velocidad_enemigo": 0.3}
                   },
-    "puntaje": {"enemigo_eliminado": 20, "enemigo_escapado": -20}
+    "puntaje": {"enemigo_eliminado": 20, "enemigo_escapado": 20, "enemigo_caputado": 40}
 } 
