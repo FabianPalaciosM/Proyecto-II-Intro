@@ -36,4 +36,4 @@ def generar_mapa_completo():
 
     return matriz_de_clases
  
-#print(generar_mapa_completo())
+print(generar_mapa_completo())
