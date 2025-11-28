@@ -17,9 +17,12 @@ color_texto = (235, 230, 210)
 color_texto2 = (180, 175, 150)
 
 pygame.init()
+pygame.mixer.init()
+
 pantalla = pygame.display.set_mode((ancho, alto))
 pygame.display.set_caption("Escapa del laberinto")
 clock = pygame.time.Clock()
+
 fuente_titulo = pygame.font.SysFont("consolas", 52, bold=True)
 fuente_subt = pygame.font.SysFont("consolas", 22)
 fuente_btn = pygame.font.SysFont("consolas", 26)
@@ -32,9 +35,8 @@ estado_modo  = "modo"
 estado_dificultad  = "dificultad"
 estado_puntajes = "puntajes"
 estado_juego = "juego"
+estado_resultado  = "resultado"
 
-
-estado_resultado = "resultado"
 estado = estado_menu
 
 nombre_jugador = ""
@@ -45,10 +47,95 @@ modo_puntajes = ""
 energia_max = 100
 energia_actual = energia_max
 
+puntaje_final = 0
+resultado_gano = False
+puntaje_guardado = False
+tiempo_partida = 0.0     
+enemigos_atrapados = 0      
+trampas_activadas = 0     
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+carpeta_sonidos = os.path.join(BASE_DIR, "sonidos")
+
+def ruta_sonido(nombre):
+    return os.path.join(carpeta_sonidos, nombre)
+
+try:
+    sonido_click    = pygame.mixer.Sound(ruta_sonido("click.wav"))
+    sonido_victoria = pygame.mixer.Sound(ruta_sonido("victoria.wav"))
+    sonido_derrota  = pygame.mixer.Sound(ruta_sonido("derrota.wav"))
+
+    sonido_click.set_volume(0.4)
+    sonido_victoria.set_volume(0.7)
+    sonido_derrota.set_volume(0.7)
+
+except (pygame.error, FileNotFoundError):
+    # Si algo falla con los archivos de sonido, seguimos sin romper el juego
+    print("No se pudieron cargar los sonidos.")
+    sonido_click = None
+    sonido_victoria = None
+    sonido_derrota = None
+
+
+def reproducir_click():
+    if sonido_click:
+        sonido_click.play()
+
+def reproducir_victoria():
+    if sonido_victoria:
+        sonido_victoria.play()
+
+def reproducir_derrota():
+    if sonido_derrota:
+        sonido_derrota.play()
+
+
+def musica_menu():
+    try:
+        pygame.mixer.music.load(ruta_sonido("menu.wav"))  # o .ogg
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
+    except (pygame.error, FileNotFoundError):
+        print("⚠ No se pudo cargar la música del menú.")
+
+
+def musica_juego():
+    try:
+        pygame.mixer.music.load(ruta_sonido("mapa.wav"))  # o .ogg
+        pygame.mixer.music.set_volume(0.5)
+        pygame.mixer.music.play(-1)
+    except (pygame.error, FileNotFoundError):
+        print("⚠ No se pudo cargar la música del juego.")
+
+musica_menu()
+
+camino = 0
+muro   = 1
+liana  = 2
+tunel  = 3
+trampa = 4
+tam_casilla = 18
+filas_mapa  = 25
+cols_mapa   = 25
+
+matriz_mapa = [[camino for _ in range(cols_mapa)] for _ in range(filas_mapa)]
+
+for c in range(3, 22):
+    matriz_mapa[4][c] = muro      
+for f in range(6, 18):
+    matriz_mapa[f][9] = liana     
+
+for f in range(10, 13):
+    for c in range(6, 9):
+        matriz_mapa[f][c] = trampa
+
+for f in range(8, 18):
+    matriz_mapa[f][18] = tunel
 pixel_bg = pygame.Surface((ancho, alto))
 tam_cuadro = 16
 
+pixel_bg = pygame.Surface((ancho, alto))
+tam_cuadro = 16
 for i in range(0, ancho, tam_cuadro):
     for j in range(0, alto, tam_cuadro):
         if (i // tam_cuadro + j // tam_cuadro) % 2 == 0:
@@ -215,9 +302,110 @@ def dibujar_barra_energia(surface, x, y, energia, energia_max):
         pygame.draw.rect(surface, color_frame, rect_seg, 1)
 
 
+def estilo_casilla(tipo):
+    if tipo == 1: 
+        fondo   = (110, 80, 50)
+        borde   = (60, 40, 25)
+        detalle = (150, 115, 75)
+    elif tipo == 2:  
+        fondo   = (20, 90, 60)
+        borde   = (10, 50, 30)
+        detalle = (40, 130, 80)
+    elif tipo == 3: 
+        fondo   = (25, 30, 35)
+        borde   = (10, 15, 18)
+        detalle = (60, 70, 80)
+    elif tipo == 4:  
+        fondo   = (90, 90, 100)
+        borde   = (40, 40, 45)
+        detalle = (160, 160, 180)
+    else:          
+        fondo   = (30, 70, 40)
+        borde   = (20, 40, 25)
+        detalle = (45, 95, 55)
+
+    return fondo, borde, detalle
+
+def dibujar_casilla(surface, x, y, tipo, tam_x, tam_y):
+    fondo, borde, detalle = estilo_casilla(tipo)
+
+    r = pygame.Rect(x, y, tam_x, tam_y)
+
+    pygame.draw.rect(surface, fondo, r)
+    pygame.draw.rect(surface, borde, r, 1)
+
+    if tipo == 1: 
+        pygame.draw.line(surface, detalle,
+                         (r.left + 2, r.centery),
+                         (r.right - 2, r.centery), 1)
+        pygame.draw.line(surface, detalle,
+                         (r.centerx, r.top + 2),
+                         (r.centerx, r.centery - 2), 1)
+        pygame.draw.line(surface, detalle,
+                         (r.centerx, r.centery + 2),
+                         (r.centerx, r.bottom - 2), 1)
+
+    elif tipo == 2: 
+        pygame.draw.rect(surface, detalle,
+                         (r.centerx - 2, r.top + 2, 4, r.height - 4))
+
+    elif tipo == 3:  
+        inner = r.inflate(-6, -6)
+        pygame.draw.rect(surface, detalle, inner, 1)
+
+    elif tipo == 4:
+        cx, cy = r.centerx, r.centery
+        y_base = r.bottom - 3
+        pygame.draw.line(surface, borde,
+                         (r.left + 2, y_base),
+                         (r.right - 2, y_base), 1)
+
+        num_pinchos = 5
+        ancho_pincho = (r.width - 8) // num_pinchos
+
+        for i in range(num_pinchos):
+            x1 = r.left + 4 + i * ancho_pincho
+            x3 = x1 + ancho_pincho - 2
+            x2 = (x1 + x3) // 2 
+
+            y_punta = y_base - (r.height // 2)  
+
+            pygame.draw.polygon(surface, detalle,
+                                [(x1, y_base), (x3, y_base), (x2, y_punta)])
+
+    else: 
+        p1 = (r.left + 4,  r.centery)
+        p2 = (r.centerx,  r.top + 4)
+        p3 = (r.right - 4, r.centery)
+        p4 = (r.centerx,  r.bottom - 4)
+        pygame.draw.polygon(surface, detalle, [p1, p2, p3, p4], 1)
+
+def dibujar_mapa(surface, area_rect, matriz):
+    filas = len(matriz)
+    cols  = len(matriz[0])
+
+    tam_x = area_rect.width  // cols
+    tam_y = area_rect.height // filas
+
+    mapa_ancho = cols  * tam_x
+    mapa_alto  = filas * tam_y
+
+    x0 = area_rect.centerx - mapa_ancho // 2
+    y0 = area_rect.centery - mapa_alto  // 2
+
+    marco = pygame.Rect(x0 - 8, y0 - 8, mapa_ancho + 16, mapa_alto + 16)
+    pygame.draw.rect(surface, (25, 35, 30), marco)
+    pygame.draw.rect(surface, color_frame, marco, 3)
+
+    for f in range(filas):
+        for c in range(cols):
+            tipo = matriz[f][c]
+            x = x0 + c * tam_x
+            y = y0 + f * tam_y
+            dibujar_casilla(surface, x, y, tipo, tam_x, tam_y)
+
 
 archivo_puntajes = "puntajes.txt" 
-
 
 def guardar_puntaje(modo, nombre, puntos):
     modo = modo.lower()
@@ -262,12 +450,69 @@ def leer_puntajes_top5():
 
     return puntajes
 
+def calcular_puntaje(rol, dificultad, energia_restante,
+                     tiempo_seg, capturas, trampas):
+    dificultad = dificultad.lower()
+    if dificultad == "facil":
+        mult = 1.0
+    elif dificultad == "media":
+        mult = 1.3
+    elif dificultad == "dificil":
+        mult = 1.6
+    else:
+        mult = 1.0
+
+    energia = max(0, int(energia_restante))
+    t = max(1, int(tiempo_seg))          
+    caps = max(0, int(capturas))
+    trp = max(0, int(trampas))
+
+    puntos_energia = energia * 3
+    puntos_capturas = caps * 120       
+    penal_tiempo = t * 2
+    penal_trampas = trp * 50
+
+    bruto = puntos_energia + puntos_capturas - penal_tiempo - penal_trampas
+    bruto = max(0, bruto)
+    return int(bruto * mult)
+
+def finalizar_partida(gano):
+    global estado, resultado_gano, puntaje_final, puntaje_guardado
+
+    resultado_gano = gano
+    puntaje_guardado = False 
+
+    if gano:
+        reproducir_victoria()
+    else:
+        reproducir_derrota()
+
+    puntaje = calcular_puntaje(
+        rol_elegido,
+        dificultad,
+        energia_actual,
+        tiempo_partida,
+        enemigos_atrapados,
+        trampas_activadas
+    )
+
+    if gano:
+        puntaje += 500
+    else:
+        puntaje += 100
+
+    puntaje_final = max(0, int(puntaje))
+    estado = estado_resultado
+
 
 corriendo = True
 while corriendo:
     dt = clock.tick(fps) / 1000
     mouse_pos = pygame.mouse.get_pos()
     mouse_click = False
+
+    if estado == estado_juego:
+        tiempo_partida += dt
 
     for evento in pygame.event.get():
         if evento.type == pygame.QUIT:
@@ -307,9 +552,7 @@ while corriendo:
         btn_ancho = 260
         btn_alto = 56
         espacio_v = 18
-
         x_btn = (ancho - btn_ancho) // 2
-
         num_btn = 3
         altura_total = num_btn * btn_alto + (num_btn - 1) * espacio_v
         y_btn_inicio = rect_interno.centery - altura_total // 2
@@ -341,15 +584,18 @@ while corriendo:
 
         if mouse_click:
             if btn_jugar.collidepoint(mouse_pos):
+                reproducir_click()
                 nombre_jugador = ""
                 rol_elegido = ""
                 dificultad = ""
                 input_activo = False
                 estado = estado_nombre
             elif btn_puntajes.collidepoint(mouse_pos):
+                reproducir_click()
                 modo_puntajes = ""
                 estado = estado_puntajes
             elif btn_salir.collidepoint(mouse_pos):
+                reproducir_click()
                 corriendo = False
 
 
@@ -400,6 +646,7 @@ while corriendo:
 
         if mouse_click and btn_siguiente.collidepoint(mouse_pos):
             if nombre_jugador.strip() != "":
+                reproducir_click()
                 estado = estado_modo
 
         teclas = pygame.key.get_pressed()
@@ -437,7 +684,6 @@ while corriendo:
 
         btn_ancho = 220
         btn_alto = 50
-
         y_btn = rect_jugador.bottom + 25 
 
         btn_jugador = dibujar_boton(
@@ -462,9 +708,11 @@ while corriendo:
 
         if mouse_click:
             if btn_jugador.collidepoint(mouse_pos):
+                reproducir_click()
                 rol_elegido = "normal"
                 estado = estado_dificultad
             elif btn_cazador.collidepoint(mouse_pos):
+                reproducir_click()
                 rol_elegido = "cazador"
                 estado = estado_dificultad
 
@@ -525,18 +773,25 @@ while corriendo:
 
         if mouse_click:
             if btn_facil.collidepoint(mouse_pos):
+                reproducir_click()
                 dificultad = "facil"
+                musica_juego()
                 estado = estado_juego
             elif btn_media.collidepoint(mouse_pos):
+                reproducir_click()
                 dificultad = "media"
+                musica_juego()
                 estado = estado_juego
             elif btn_dificil.collidepoint(mouse_pos):
+                reproducir_click()
                 dificultad = "dificil"
+                musica_juego()
                 estado = estado_juego
 
         teclas = pygame.key.get_pressed()
         if teclas[pygame.K_ESCAPE]:
             estado = estado_menu
+            musica_menu()
 
     elif estado == estado_puntajes:
         rect_interno = dibujar_marco(pantalla)
@@ -586,8 +841,10 @@ while corriendo:
 
             if mouse_click:
                 if btn_p_jugador.collidepoint(mouse_pos):
+                    reproducir_click()
                     modo_puntajes = "escapa"
                 elif btn_p_cazador.collidepoint(mouse_pos):
+                    reproducir_click()
                     modo_puntajes = "cazador"
         else:
             puntajes = leer_puntajes_top5()
@@ -653,20 +910,14 @@ while corriendo:
                 ancho // 2, rect_interno.bottom - 40
             )
 
-
-            teclas = pygame.key.get_pressed()
-            if teclas[pygame.K_ESCAPE]:
-                estado = estado_menu
-
     elif estado == estado_resultado:
         rect_interno = dibujar_marco(pantalla)
 
         if not puntaje_guardado:
             if rol_elegido == "normal":
-                modo = "escapa"   
+                modo = "escapa"
             else:
                 modo = "cazador"
-
             guardar_puntaje(modo, nombre_jugador, puntaje_final)
             puntaje_guardado = True
 
@@ -680,7 +931,7 @@ while corriendo:
         dibujar_texto(
             pantalla, texto_titulo,
             fuente_titulo, color_titulo,
-            ancho // 2, rect_interno.top + 90
+            ancho // 2, rect_interno.top + 80
         )
 
         if rol_elegido == "normal":
@@ -740,8 +991,11 @@ while corriendo:
 
         if mouse_click:
             if btn_menu.collidepoint(mouse_pos):
+                reproducir_click()
                 estado = estado_menu
+                musica_menu()
             elif btn_ver_puntajes.collidepoint(mouse_pos):
+                reproducir_click()
                 if rol_elegido == "normal":
                     modo_puntajes = "escapa"
                 else:
@@ -751,49 +1005,35 @@ while corriendo:
         teclas = pygame.key.get_pressed()
         if teclas[pygame.K_ESCAPE]:
             estado = estado_menu
+            musica_menu()
 
     elif estado == estado_juego:
         rect_interno = dibujar_marco(pantalla)
 
-        hud_top = rect_interno.top + 12      
-        panel_ancho = 220                
+        hud_top = rect_interno.top + 12
+        panel_ancho = 220
 
         x_barra = rect_interno.right - 20 - panel_ancho
         y_barra = hud_top
         dibujar_barra_energia(pantalla, x_barra, y_barra, energia_actual, energia_max)
 
         if rol_elegido == "normal":
-            rol_texto = "JUGADOR"
-        elif rol_elegido == "cazador":
-            rol_texto = "CAZADOR"
+            rol_hud = "JUGADOR"
         else:
-            rol_texto = rol_elegido.upper()
+            rol_hud = "CAZADOR"
+        dif_hud = dificultad.upper().replace("FACIL", "FÁCIL")
 
-        mapa_dificultad = {
-            "facil":   "FÁCIL",
-            "media":   "MEDIA",
-            "dificil": "DIFÍCIL"
-        }
-        dif_texto = mapa_dificultad.get(dificultad.lower(), dificultad.upper())
-
-        texto_info = f"{nombre_jugador}  |  {rol_texto}  |  {dif_texto}"
-
+        texto_info = f"{nombre_jugador}  |  {rol_hud}  |  {dif_hud}"
         info_x = rect_interno.left + 20
-        alto_panel_barra = 36            
-        info_y = hud_top + (alto_panel_barra - fuente_hud.get_height()) // 2
+        info_y = hud_top + (36 - fuente_hud.get_height()) // 2
 
         dibujar_texto(
             pantalla, texto_info,
             fuente_hud, color_texto2,
-            info_x, info_y,
-            centro=False
+            info_x, info_y, centro=False
         )
 
-        y_centro_mapa = (rect_interno.top + rect_interno.bottom) // 2
-        if rol_elegido == "cazador":
-            cazador(pantalla, ancho // 2 - 20, y_centro_mapa)
-        else:
-            personaje_normal(pantalla, ancho // 2 - 20, y_centro_mapa)
+        dibujar_mapa(pantalla, rect_interno, matriz_mapa)
 
         dibujar_texto(
             pantalla, "Presiona ESC para volver al menú",
@@ -804,9 +1044,14 @@ while corriendo:
         teclas = pygame.key.get_pressed()
         if teclas[pygame.K_ESCAPE]:
             estado = estado_menu
+            musica_menu()            
 
 
     pygame.display.flip()
+
+if pygame.mixer.get_init():
+    pygame.mixer.music.stop()
+    pygame.mixer.quit()
 
 pygame.quit()
 exit()
