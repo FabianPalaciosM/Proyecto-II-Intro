@@ -261,8 +261,8 @@ def dibujar_barra_energia(surface, x, y, energia, energia_max):
         (6, 7),
     ]
 
-    for fila, columna in pixeles_rayo:
-        r = pygame.Rect(base_x + fila * tile, base_y + columna * tile, tile, tile)
+    for columna, fila in pixeles_rayo:
+        r = pygame.Rect(base_x + columna * tile, base_y + fila * tile, tile, tile)
         pygame.draw.rect(surface, amarillo, r)
         pygame.draw.rect(surface, amarillo_osc, r, 1)
 
@@ -863,6 +863,7 @@ while corriendo:
                     modo = "cazador"
                 controlador = ControladorDeJuego(dificultad, modo)
                 energia_actual = controlador.jugador.energia
+                energia_max = controlador.jugador.energia
                 tiempo_partida = 0.0
                 enemigos_atrapados = 0
                 trampas_activadas = 0
@@ -877,6 +878,7 @@ while corriendo:
                     modo = "cazador"
                 controlador = ControladorDeJuego(dificultad, modo)
                 energia_actual = controlador.jugador.energia
+                energia_max = controlador.jugador.energia
                 tiempo_partida = 0.0
                 enemigos_atrapados = 0
                 trampas_activadas = 0
@@ -891,6 +893,7 @@ while corriendo:
                     modo = "cazador"
                 controlador = ControladorDeJuego(dificultad, modo)
                 energia_actual = controlador.jugador.energia
+                energia_max = controlador.jugador.energia
                 tiempo_partida = 0.0
                 enemigos_atrapados = 0
                 trampas_activadas = 0
@@ -1156,6 +1159,18 @@ while corriendo:
 
         rect_interno = dibujar_marco(pantalla)
 
+        mapa_render = controlador.obtener_mapa_render()
+        x0, y0, tam_x, tam_y = dibujar_mapa(pantalla, rect_interno, mapa_render)
+
+        for fila_trampa, columna_trampa in controlador.obtener_trampas():
+            dibujar_trampa_en_mapa(pantalla, fila_trampa, columna_trampa, x0, y0, tam_x, tam_y)
+
+        for fila_enemigo, columna_enemigo in controlador.obtener_posiciones_enemigos():
+            dibujar_entidad_en_mapa(pantalla, fila_enemigo, columna_enemigo, x0, y0, tam_x, tam_y, "enemigo")
+
+        fila_jugador, columna_jugador = controlador.obtener_posicion_jugador()
+        dibujar_entidad_en_mapa(pantalla, fila_jugador, columna_jugador, x0, y0, tam_x, tam_y, "jugador")
+
         hud_top = rect_interno.top + 12
         panel_ancho = 220
 
@@ -1179,24 +1194,11 @@ while corriendo:
             info_x, info_y, centro=False
         )
 
-        mapa_render = controlador.obtener_mapa_render()
-        x0, y0, tam_x, tam_y = dibujar_mapa(pantalla, rect_interno, mapa_render)
-
-        for fila_trampa, columna_trampa in controlador.obtener_trampas():
-            dibujar_trampa_en_mapa(pantalla, fila_trampa, columna_trampa, x0, y0, tam_x, tam_y)
-
-        for fila_enemigo, columna_enemigo in controlador.obtener_posiciones_enemigos():
-            dibujar_entidad_en_mapa(pantalla, fila_enemigo, columna_enemigo, x0, y0, tam_x, tam_y, "enemigo")
-
-        fila_jugador, columna_jugador = controlador.obtener_posicion_jugador()
-        dibujar_entidad_en_mapa(pantalla, fila_jugador, columna_jugador, x0, y0, tam_x, tam_y, "jugador")
-
         dibujar_texto(
             pantalla, "WASD/Flechas: Mover | SHIFT: Correr | ESPACIO: Trampa | ESC: Menú",
             fuente_subt, color_texto2,
             ancho // 2, rect_interno.bottom - 30
         )
-        dibujar_barra_energia(pantalla, 625, 30, config.ENERGIA_INICIAL, energia_max)
 
         if teclas[pygame.K_ESCAPE]:
             estado = estado_menu
