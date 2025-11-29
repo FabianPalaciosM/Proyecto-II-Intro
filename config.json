@@ -9,8 +9,7 @@
     "tiempo_respawneo_enemigos": 10,
     "velocidad_jugador": 0.4,
     "velocidad_jugador_corriendo": 0.35,
-    "dificultad": {
-                    "facil": {"cantidad_de_enemigos": 1,"velocidad_enemigo": 0.55},
+    "dificultad": { "facil": {"cantidad_de_enemigos": 1,"velocidad_enemigo": 0.55},
                     "media": {"cantidad_de_enemigos": 2,"velocidad_enemigo": 0.45},
                     "dificil": {"cantidad_de_enemigos": 3,"velocidad_enemigo": 0.35}},
     "puntaje": {"enemigo_eliminado": 100,"enemigo_capturado": 100,"enemigo_escapado": -50}

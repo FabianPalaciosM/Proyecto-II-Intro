@@ -126,7 +126,21 @@ class Enemigo(Entidad):
 
         casilla_destino = self.intentar_mover(dx, dy)
         if casilla_destino is False:
-            return False
+            direcciones_alternativas = []
+            if dx == 0:
+                direcciones_alternativas = [(1, 0), (-1, 0), (0, -dy)]
+            elif dy == 0:
+                direcciones_alternativas = [(0, 1), (0, -1), (-dx, 0)]
+
+            for alt_dx, alt_dy in direcciones_alternativas:
+                casilla_alt = self.intentar_mover(alt_dx, alt_dy)
+                if casilla_alt is not False:
+                    dx, dy = alt_dx, alt_dy
+                    casilla_destino = casilla_alt
+                    break
+
+            if casilla_destino is False:
+                return False
 
         self.fila += dx
         self.columna += dy
@@ -158,12 +172,12 @@ class Enemigo(Entidad):
         if not self.vivo:
             return (0, 0)
 
-        fila_jugador, columna_jugador = jugador.posicion()
-
         dx = 0
         dy = 0
 
         if self.modo == "escapa":
+            fila_jugador, columna_jugador = jugador.posicion()
+
             if fila_jugador > self.fila:
                 dx = 1
             elif fila_jugador < self.fila:
@@ -174,13 +188,25 @@ class Enemigo(Entidad):
                 dy = -1
 
         else:
-            if fila_jugador > self.fila:
-                dx = -1
-            elif fila_jugador < self.fila:
+            salida_fila, salida_columna = self.buscar_salida_cercana()
+
+            if salida_fila > self.fila:
                 dx = 1
-            elif columna_jugador > self.columna:
-                dy = -1
-            elif columna_jugador < self.columna:
+            elif salida_fila < self.fila:
+                dx = -1
+            elif salida_columna > self.columna:
                 dy = 1
+            elif salida_columna < self.columna:
+                dy = -1
 
         return (dx, dy)
+
+    def buscar_salida_cercana(self):
+        filas = len(self.mapa)
+        columnas = len(self.mapa[0])
+
+        for i in range(filas):
+            for j in range(columnas):
+                if self.mapa[i][j].es_salida():
+                    return (i, j)
+        return (filas - 1, columnas - 1)

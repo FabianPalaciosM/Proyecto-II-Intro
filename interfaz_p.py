@@ -411,16 +411,17 @@ def dibujar_mapa(surface, area_rect, matriz):
     return (x0, y0, tam_x, tam_y)
 
 
-def dibujar_entidad_en_mapa(surface, fila, columna, x0, y0, tam_x, tam_y, color):
+def dibujar_entidad_en_mapa(surface, fila, columna, x0, y0, tam_x, tam_y, tipo_personaje):
     x = x0 + columna * tam_x
     y = y0 + fila * tam_y
 
-    centro_x = x + tam_x // 2
-    centro_y = y + tam_y // 2
-    radio = min(tam_x, tam_y) // 3
+    centro_x = x + (tam_x - 34) // 2
+    centro_y = y + (tam_y - 51) // 2
 
-    pygame.draw.circle(surface, color, (centro_x, centro_y), radio)
-    pygame.draw.circle(surface, (0, 0, 0), (centro_x, centro_y), radio, 1)
+    if tipo_personaje == "jugador":
+        personaje_normal(surface, centro_x, centro_y)
+    elif tipo_personaje == "enemigo":
+        cazador(surface, centro_x, centro_y)
 
 
 def dibujar_trampa_en_mapa(surface, fila, columna, x0, y0, tam_x, tam_y):
@@ -529,14 +530,17 @@ def finalizar_partida(gano):
     else:
         modo = "cazador"
 
-    puntaje = calcular_puntaje(
-        modo_juego=modo,
-        dificultad=dificultad,
-        tiempo_seg=tiempo_partida,
-        enemigos_eliminados=enemigos_atrapados,
-        enemigos_capturados=0,  # TODO: Implement for Hunter mode
-        enemigos_escapados=0    # TODO: Implement for Hunter mode
-    )
+    if controlador:
+        puntaje = calcular_puntaje(
+            modo_juego=modo,
+            dificultad=dificultad,
+            tiempo_seg=tiempo_partida,
+            enemigos_eliminados=controlador.obtener_enemigos_eliminados(),
+            enemigos_capturados=controlador.obtener_enemigos_capturados(),
+            enemigos_escapados=controlador.obtener_enemigos_escapados()
+        )
+    else:
+        puntaje = 0
 
     if gano:
         puntaje += 500
@@ -1146,12 +1150,10 @@ while corriendo:
             dibujar_trampa_en_mapa(pantalla, fila_trampa, columna_trampa, x0, y0, tam_x, tam_y)
 
         for fila_enemigo, columna_enemigo in controlador.obtener_posiciones_enemigos():
-            color_enemigo = (200, 100, 50)
-            dibujar_entidad_en_mapa(pantalla, fila_enemigo, columna_enemigo, x0, y0, tam_x, tam_y, color_enemigo)
+            dibujar_entidad_en_mapa(pantalla, fila_enemigo, columna_enemigo, x0, y0, tam_x, tam_y, "enemigo")
 
         fila_jugador, columna_jugador = controlador.obtener_posicion_jugador()
-        color_jugador = (100, 200, 255)
-        dibujar_entidad_en_mapa(pantalla, fila_jugador, columna_jugador, x0, y0, tam_x, tam_y, color_jugador)
+        dibujar_entidad_en_mapa(pantalla, fila_jugador, columna_jugador, x0, y0, tam_x, tam_y, "jugador")
 
         dibujar_texto(
             pantalla, "WASD/Flechas: Mover | SHIFT: Correr | ESPACIO: Trampa | ESC: Menú",
