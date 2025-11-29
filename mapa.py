@@ -30,6 +30,8 @@ def convertir_matriz_a_clases(matriz_numerica):
 
 
 def generar_mapa_completo():
+    #S: La matriz numerica con numeros representando la matriz final, y la matriz de objetos finales
+    #Crea una matriz numerica con los parametros del config y después crea la matriz de objetos para manejarla
     matriz_numerica = generar_mapa(config.CANTIDAD_DE_FILAS, config.CANTIDAD_DE_COLUMNAS)
 
     matriz_de_clases = convertir_matriz_a_clases(matriz_numerica)

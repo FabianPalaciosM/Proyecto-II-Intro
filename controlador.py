@@ -31,6 +31,7 @@ class ControladorDeJuego:
         self.enemigos_escapados = 0
 
     def crear_enemigos(self):
+        #Crea los enemigos en el mapa
         cantidad = config.DIFICULTADES[self.dificultad]["cantidad_de_enemigos"]
         velocidad = config.DIFICULTADES[self.dificultad]["velocidad_enemigo"]
 
@@ -41,6 +42,7 @@ class ControladorDeJuego:
             self.enemigos.append(enemigo)
 
     def buscar_salida(self):
+        #Busca la salida
         filas = len(self.matriz_clases)
         columnas = len(self.matriz_clases[0])
 
@@ -51,6 +53,7 @@ class ControladorDeJuego:
         return (filas - 1, columnas - 1)
 
     def buscar_posicion_spawn_enemigo(self):
+        #Busca una casilla donde pueda estar el enemigo
         filas = len(self.matriz_clases)
         columnas = len(self.matriz_clases[0])
 
@@ -65,6 +68,7 @@ class ControladorDeJuego:
         return (filas - 1, columnas - 1)
 
     def mover_jugador(self, dx, dy, correr=False):
+        #Mueve el jugador
         if not self.jugador.vivo or self.estado != "jugando":
             return False
 
@@ -91,16 +95,17 @@ class ControladorDeJuego:
         return movido
 
     def verificar_colision_adyacente(self, pos_jugador, pos_enemigo):
+        #Verifica que el jugador y el enemigo no estén a la par
         fila_j, col_j = pos_jugador
         fila_e, col_e = pos_enemigo
 
         diferencia_fila = abs(fila_j - fila_e)
         diferencia_col = abs(col_j - col_e)
 
-        return (diferencia_fila <= 1 and diferencia_col <= 1 and
-                not (diferencia_fila == 0 and diferencia_col == 0))
+        return (diferencia_fila <= 1 and diferencia_col <= 1 and not (diferencia_fila == 0 and diferencia_col == 0))
 
     def actualizar_enemigos(self):
+        #Actualiza la posición de los enemigos
         if self.estado != "jugando":
             return
 
@@ -155,6 +160,7 @@ class ControladorDeJuego:
             self.ultimo_movimiento_enemigos = tiempo_actual
 
     def colocar_trampa(self):
+        #Coloca una trampa en el mapa en tiempo de ejecución
         if self.estado != "jugando":
             return False
         
@@ -167,25 +173,33 @@ class ControladorDeJuego:
         return False
 
     def obtener_posicion_jugador(self):
+        #Retorna la posicion del jugador
         return self.jugador.posicion()
 
     def obtener_posiciones_enemigos(self):
+        #Retorna la posicion de los enemigos
         return [enemigo.posicion() for enemigo in self.enemigos if enemigo.vivo]
 
     def obtener_trampas(self):
+        #Retorna una lista de tramoas
         return list(self.trampas)
 
     def obtener_mapa_render(self):
+        #Retorna el mapa
         return self.matriz_clases
 
     def obtener_enemigos_eliminados(self):
+        #Retorna la cantidad de enemigos eliminados
         return self.enemigos_eliminados
 
     def obtener_enemigos_capturados(self):
+        #Retorna la cantidad de enemigos capturados
         return self.enemigos_capturados
 
     def obtener_enemigos_escapados(self):
+        #Retorna la cantidad de enemigos escapados
         return self.enemigos_escapados
 
     def estado_juego(self):
+        #Retorna el estado del juego 
         return self.estado

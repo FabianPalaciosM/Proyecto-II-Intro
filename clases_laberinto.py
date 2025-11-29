@@ -21,9 +21,6 @@ class Casilla:
         #True si se puede colocar una trampa, False si no
         return False
 
-    def __str__(self):
-        return f"{self.tipo} en la casilla[{self.fila}][{self.columna}]"
-
 class Camino(Casilla):
     def __init__(self, fila, columna):
         super().__init__(fila, columna, "camino")
@@ -79,4 +76,5 @@ class Salida(Casilla):
         return False
 
     def es_salida(self):
+        #Retorna True si es salida
         return True
