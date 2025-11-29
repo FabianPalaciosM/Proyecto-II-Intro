@@ -14,9 +14,6 @@ COOLDOWN_TRAMPAS = data.get("cooldown_trampas")
 TIEMPO_RESPAWNEO_ENEMIGOS = data.get("tiempo_respawneo_enemigos")
 VELOCIDAD_JUGADOR = data.get("velocidad_jugador")
 VELOCIDAD_JUGADOR_CORRIENDO = data.get("velocidad_jugador_corriendo")
-DIFICULTADES = data.get("dificultad")   
+DIFICULTADES = data.get("dificultad")
 PUNTAJE = data.get("puntaje")
-
-def obtener_dificultad(nivel):
-    #Retorna los parametros especificos de la dificultad seleccionada
-    return DIFICULTADES.get(nivel, None)
+VELOCIDAD_ENEMIGO = data.get("dificultad", {}).get("media", {}).get("velocidad_enemigo", 0.4)

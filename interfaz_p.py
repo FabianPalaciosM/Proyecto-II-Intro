@@ -1,7 +1,9 @@
 import pygame
 from sys import exit
 import os
-from personajes import personaje_normal, cazador 
+from personajes import personaje_normal, cazador
+
+from controlador import ControladorDeJuego
 
 ancho, alto = 900, 600
 fps = 30
@@ -50,9 +52,13 @@ energia_actual = energia_max
 puntaje_final = 0
 resultado_gano = False
 puntaje_guardado = False
-tiempo_partida = 0.0     
-enemigos_atrapados = 0      
-trampas_activadas = 0     
+tiempo_partida = 0.0
+enemigos_atrapados = 0
+trampas_activadas = 0
+
+controlador = None
+ultimo_movimiento = 0
+velocidad_movimiento = 0.2     
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 carpeta_sonidos = os.path.join(BASE_DIR, "sonidos")
@@ -109,30 +115,7 @@ def musica_juego():
 
 musica_menu()
 
-camino = 0
-muro   = 1
-liana  = 2
-tunel  = 3
-trampa = 4
 tam_casilla = 18
-filas_mapa  = 25
-cols_mapa   = 25
-
-matriz_mapa = [[camino for _ in range(cols_mapa)] for _ in range(filas_mapa)]
-
-for c in range(3, 22):
-    matriz_mapa[4][c] = muro      
-for f in range(6, 18):
-    matriz_mapa[f][9] = liana     
-
-for f in range(10, 13):
-    for c in range(6, 9):
-        matriz_mapa[f][c] = trampa
-
-for f in range(8, 18):
-    matriz_mapa[f][18] = tunel
-pixel_bg = pygame.Surface((ancho, alto))
-tam_cuadro = 16
 
 pixel_bg = pygame.Surface((ancho, alto))
 tam_cuadro = 16
@@ -302,39 +285,46 @@ def dibujar_barra_energia(surface, x, y, energia, energia_max):
         pygame.draw.rect(surface, color_frame, rect_seg, 1)
 
 
-def estilo_casilla(tipo):
-    if tipo == 1: 
-        fondo   = (110, 80, 50)
-        borde   = (60, 40, 25)
-        detalle = (150, 115, 75)
-    elif tipo == 2:  
-        fondo   = (20, 90, 60)
-        borde   = (10, 50, 30)
-        detalle = (40, 130, 80)
-    elif tipo == 3: 
-        fondo   = (25, 30, 35)
-        borde   = (10, 15, 18)
-        detalle = (60, 70, 80)
-    elif tipo == 4:  
-        fondo   = (90, 90, 100)
-        borde   = (40, 40, 45)
-        detalle = (160, 160, 180)
-    else:          
+def estilo_casilla(casilla_obj):
+    tipo = casilla_obj.tipo
+
+    if tipo == "camino":
         fondo   = (30, 70, 40)
         borde   = (20, 40, 25)
         detalle = (45, 95, 55)
+    elif tipo == "liana":
+        fondo   = (20, 90, 60)
+        borde   = (10, 50, 30)
+        detalle = (40, 130, 80)
+    elif tipo == "tunel":
+        fondo   = (25, 30, 35)
+        borde   = (10, 15, 18)
+        detalle = (60, 70, 80)
+    elif tipo == "muro":
+        fondo   = (110, 80, 50)
+        borde   = (60, 40, 25)
+        detalle = (150, 115, 75)
+    elif tipo == "salida":
+        fondo   = (90, 90, 100)
+        borde   = (40, 40, 45)
+        detalle = (160, 160, 180)
+    else:
+        fondo   = (90, 90, 100)
+        borde   = (40, 40, 45)
+        detalle = (160, 160, 180)
 
     return fondo, borde, detalle
 
-def dibujar_casilla(surface, x, y, tipo, tam_x, tam_y):
-    fondo, borde, detalle = estilo_casilla(tipo)
+def dibujar_casilla(surface, x, y, casilla_obj, tam_x, tam_y):
+    fondo, borde, detalle = estilo_casilla(casilla_obj)
+    tipo = casilla_obj.tipo
 
     r = pygame.Rect(x, y, tam_x, tam_y)
 
     pygame.draw.rect(surface, fondo, r)
     pygame.draw.rect(surface, borde, r, 1)
 
-    if tipo == 1: 
+    if tipo == "muro":
         pygame.draw.line(surface, detalle,
                          (r.left + 2, r.centery),
                          (r.right - 2, r.centery), 1)
@@ -345,15 +335,15 @@ def dibujar_casilla(surface, x, y, tipo, tam_x, tam_y):
                          (r.centerx, r.centery + 2),
                          (r.centerx, r.bottom - 2), 1)
 
-    elif tipo == 2: 
+    elif tipo == "liana":
         pygame.draw.rect(surface, detalle,
                          (r.centerx - 2, r.top + 2, 4, r.height - 4))
 
-    elif tipo == 3:  
+    elif tipo == "tunel":
         inner = r.inflate(-6, -6)
         pygame.draw.rect(surface, detalle, inner, 1)
 
-    elif tipo == 4:
+    elif tipo == "trampa":
         cx, cy = r.centerx, r.centery
         y_base = r.bottom - 3
         pygame.draw.line(surface, borde,
@@ -368,17 +358,33 @@ def dibujar_casilla(surface, x, y, tipo, tam_x, tam_y):
             x3 = x1 + ancho_pincho - 2
             x2 = (x1 + x3) // 2 
 
-            y_punta = y_base - (r.height // 2)  
+            y_punta = y_base - (r.height // 2)
 
             pygame.draw.polygon(surface, detalle,
                                 [(x1, y_base), (x3, y_base), (x2, y_punta)])
 
-    else: 
+    elif tipo == "camino":
         p1 = (r.left + 4,  r.centery)
         p2 = (r.centerx,  r.top + 4)
         p3 = (r.right - 4, r.centery)
         p4 = (r.centerx,  r.bottom - 4)
         pygame.draw.polygon(surface, detalle, [p1, p2, p3, p4], 1)
+
+    elif tipo == "salida":
+        fondo   = (80, 180, 255)
+        borde   = (20, 100, 180)
+        detalle = (200, 240, 255)
+
+        pygame.draw.rect(surface, fondo, r)
+        pygame.draw.rect(surface, borde, r, 2)
+
+        # símbolo especial de salida
+        p1 = (r.centerx, r.top + 4)
+        p2 = (r.right - 4, r.centery)
+        p3 = (r.centerx, r.bottom - 4)
+        p4 = (r.left + 4, r.centery)
+        pygame.draw.polygon(surface, detalle, [p1, p2, p3, p4], 2)
+
 
 def dibujar_mapa(surface, area_rect, matriz):
     filas = len(matriz)
@@ -399,10 +405,40 @@ def dibujar_mapa(surface, area_rect, matriz):
 
     for f in range(filas):
         for c in range(cols):
-            tipo = matriz[f][c]
+            casilla_obj = matriz[f][c]
             x = x0 + c * tam_x
             y = y0 + f * tam_y
-            dibujar_casilla(surface, x, y, tipo, tam_x, tam_y)
+            dibujar_casilla(surface, x, y, casilla_obj, tam_x, tam_y)
+
+    return (x0, y0, tam_x, tam_y)
+
+
+def dibujar_entidad_en_mapa(surface, fila, columna, x0, y0, tam_x, tam_y, color):
+    """Draw a simple representation of an entity on the map"""
+    x = x0 + columna * tam_x
+    y = y0 + fila * tam_y
+
+    centro_x = x + tam_x // 2
+    centro_y = y + tam_y // 2
+    radio = min(tam_x, tam_y) // 3
+
+    pygame.draw.circle(surface, color, (centro_x, centro_y), radio)
+    pygame.draw.circle(surface, (0, 0, 0), (centro_x, centro_y), radio, 1)
+
+
+def dibujar_trampa_en_mapa(surface, fila, columna, x0, y0, tam_x, tam_y):
+    """Draw a trap indicator on the map"""
+    x = x0 + columna * tam_x
+    y = y0 + fila * tam_y
+
+    color_trampa = (200, 50, 50)
+    margen = 3
+    pygame.draw.line(surface, color_trampa,
+                     (x + margen, y + margen),
+                     (x + tam_x - margen, y + tam_y - margen), 2)
+    pygame.draw.line(surface, color_trampa,
+                     (x + tam_x - margen, y + margen),
+                     (x + margen, y + tam_y - margen), 2)
 
 
 archivo_puntajes = "puntajes.txt" 
@@ -775,16 +811,44 @@ while corriendo:
             if btn_facil.collidepoint(mouse_pos):
                 reproducir_click()
                 dificultad = "facil"
+                # Initialize game controller
+                if rol_elegido == "normal":
+                    modo = "escapa"
+                else:
+                    modo = "cazador"
+                controlador = ControladorDeJuego(dificultad)
+                energia_actual = controlador.jugador.energia
+                tiempo_partida = 0.0
+                enemigos_atrapados = 0
+                trampas_activadas = 0
                 musica_juego()
                 estado = estado_juego
             elif btn_media.collidepoint(mouse_pos):
                 reproducir_click()
                 dificultad = "media"
+                if rol_elegido == "normal":
+                    modo = "escapa"
+                else:
+                    modo = "cazador"
+                controlador = ControladorDeJuego(dificultad)
+                energia_actual = controlador.jugador.energia
+                tiempo_partida = 0.0
+                enemigos_atrapados = 0
+                trampas_activadas = 0
                 musica_juego()
                 estado = estado_juego
             elif btn_dificil.collidepoint(mouse_pos):
                 reproducir_click()
                 dificultad = "dificil"
+                if rol_elegido == "normal":
+                    modo = "escapa"
+                else:
+                    modo = "cazador"
+                controlador = ControladorDeJuego(dificultad)
+                energia_actual = controlador.jugador.energia
+                tiempo_partida = 0.0
+                enemigos_atrapados = 0
+                trampas_activadas = 0
                 musica_juego()
                 estado = estado_juego
 
@@ -1008,6 +1072,47 @@ while corriendo:
             musica_menu()
 
     elif estado == estado_juego:
+        if controlador is None:
+            estado = estado_menu
+            continue
+
+        # Handle movement input with timing
+        tiempo_actual = pygame.time.get_ticks() / 1000.0
+        teclas = pygame.key.get_pressed()
+
+        # Movement controls
+        if tiempo_actual - ultimo_movimiento >= velocidad_movimiento:
+            dx, dy = 0, 0
+            correr = teclas[pygame.K_LSHIFT] or teclas[pygame.K_RSHIFT]
+
+            if teclas[pygame.K_w] or teclas[pygame.K_UP]:
+                dx = -1
+            elif teclas[pygame.K_s] or teclas[pygame.K_DOWN]:
+                dx = 1
+
+            if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
+                dy = -1
+            elif teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
+                dy = 1
+
+            if dx != 0 or dy != 0:
+                controlador.mover_jugador(dx, dy, correr)
+                ultimo_movimiento = tiempo_actual
+
+        if teclas[pygame.K_SPACE]:
+            if controlador.colocar_trampa():
+                trampas_activadas += 1
+
+        controlador.actualizar_enemigos()
+
+        energia_actual = controlador.jugador.energia
+
+        estado_controlador = controlador.estado_juego()
+        if estado_controlador == "victoria":
+            finalizar_partida(True)
+        elif estado_controlador == "derrota":
+            finalizar_partida(False)
+
         rect_interno = dibujar_marco(pantalla)
 
         hud_top = rect_interno.top + 12
@@ -1033,15 +1138,26 @@ while corriendo:
             info_x, info_y, centro=False
         )
 
-        dibujar_mapa(pantalla, rect_interno, matriz_mapa)
+        mapa_render = controlador.obtener_mapa_render()
+        x0, y0, tam_x, tam_y = dibujar_mapa(pantalla, rect_interno, mapa_render)
+
+        for fila_trampa, columna_trampa in controlador.obtener_trampas():
+            dibujar_trampa_en_mapa(pantalla, fila_trampa, columna_trampa, x0, y0, tam_x, tam_y)
+
+        for fila_enemigo, columna_enemigo in controlador.obtener_posiciones_enemigos():
+            color_enemigo = (200, 100, 50)
+            dibujar_entidad_en_mapa(pantalla, fila_enemigo, columna_enemigo, x0, y0, tam_x, tam_y, color_enemigo)
+
+        fila_jugador, columna_jugador = controlador.obtener_posicion_jugador()
+        color_jugador = (100, 200, 255)
+        dibujar_entidad_en_mapa(pantalla, fila_jugador, columna_jugador, x0, y0, tam_x, tam_y, color_jugador)
 
         dibujar_texto(
-            pantalla, "Presiona ESC para volver al menú",
+            pantalla, "WASD/Flechas: Mover | SHIFT: Correr | ESPACIO: Trampa | ESC: Menú",
             fuente_subt, color_texto2,
             ancho // 2, rect_interno.bottom - 30
         )
 
-        teclas = pygame.key.get_pressed()
         if teclas[pygame.K_ESCAPE]:
             estado = estado_menu
             musica_menu()            
