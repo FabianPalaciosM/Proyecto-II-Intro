@@ -2,7 +2,7 @@ import pygame
 from sys import exit
 import os
 from personajes import personaje_normal, cazador
-
+import config
 from controlador import ControladorDeJuego
 
 ancho, alto = 900, 600
@@ -46,7 +46,7 @@ input_activo = False
 rol_elegido = ""     
 dificultad = ""  
 modo_puntajes = ""   
-energia_max = 100
+energia_max = config.ENERGIA_INICIAL
 energia_actual = energia_max
 
 puntaje_final = 0
@@ -56,9 +56,7 @@ tiempo_partida = 0.0
 enemigos_atrapados = 0
 trampas_activadas = 0
 
-controlador = None
-ultimo_movimiento = 0
-velocidad_movimiento = 0.2     
+controlador = None     
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 carpeta_sonidos = os.path.join(BASE_DIR, "sonidos")
@@ -414,7 +412,6 @@ def dibujar_mapa(surface, area_rect, matriz):
 
 
 def dibujar_entidad_en_mapa(surface, fila, columna, x0, y0, tam_x, tam_y, color):
-    """Draw a simple representation of an entity on the map"""
     x = x0 + columna * tam_x
     y = y0 + fila * tam_y
 
@@ -427,7 +424,6 @@ def dibujar_entidad_en_mapa(surface, fila, columna, x0, y0, tam_x, tam_y, color)
 
 
 def dibujar_trampa_en_mapa(surface, fila, columna, x0, y0, tam_x, tam_y):
-    """Draw a trap indicator on the map"""
     x = x0 + columna * tam_x
     y = y0 + fila * tam_y
 
@@ -486,8 +482,9 @@ def leer_puntajes_top5():
 
     return puntajes
 
-def calcular_puntaje(rol, dificultad, energia_restante,
-                     tiempo_seg, capturas, trampas):
+def calcular_puntaje(modo_juego, dificultad, tiempo_seg, enemigos_eliminados,
+                     enemigos_capturados=0, enemigos_escapados=0):
+
     dificultad = dificultad.lower()
     if dificultad == "facil":
         mult = 1.0
@@ -498,44 +495,53 @@ def calcular_puntaje(rol, dificultad, energia_restante,
     else:
         mult = 1.0
 
-    energia = max(0, int(energia_restante))
-    t = max(1, int(tiempo_seg))          
-    caps = max(0, int(capturas))
-    trp = max(0, int(trampas))
+    tiempo = max(0, tiempo_seg)
+    base_tiempo = max(0, 1000 - int(tiempo * 5))
 
-    puntos_energia = energia * 3
-    puntos_capturas = caps * 120       
-    penal_tiempo = t * 2
-    penal_trampas = trp * 50
+    bonus_eliminado = config.PUNTAJE.get("enemigo_eliminado", 100)
+    bonus_capturado = config.PUNTAJE.get("enemigo_capturado", 150)
+    penalizacion_escapado = config.PUNTAJE.get("enemigo_escapado", -50)
 
-    bruto = puntos_energia + puntos_capturas - penal_tiempo - penal_trampas
-    bruto = max(0, bruto)
-    return int(bruto * mult)
+    bonificaciones = 0
+    if modo_juego == "escapa":
+        bonificaciones = enemigos_eliminados * bonus_eliminado
+    else:
+        bonificaciones = (enemigos_capturados * bonus_capturado +
+                         enemigos_escapados * penalizacion_escapado)
+
+    puntaje_total = int((base_tiempo + bonificaciones) * mult)
+
+    return max(0, puntaje_total)
 
 def finalizar_partida(gano):
     global estado, resultado_gano, puntaje_final, puntaje_guardado
 
     resultado_gano = gano
-    puntaje_guardado = False 
+    puntaje_guardado = False
 
     if gano:
         reproducir_victoria()
     else:
         reproducir_derrota()
 
+    if rol_elegido == "normal":
+        modo = "escapa"
+    else:
+        modo = "cazador"
+
     puntaje = calcular_puntaje(
-        rol_elegido,
-        dificultad,
-        energia_actual,
-        tiempo_partida,
-        enemigos_atrapados,
-        trampas_activadas
+        modo_juego=modo,
+        dificultad=dificultad,
+        tiempo_seg=tiempo_partida,
+        enemigos_eliminados=enemigos_atrapados,
+        enemigos_capturados=0,  # TODO: Implement for Hunter mode
+        enemigos_escapados=0    # TODO: Implement for Hunter mode
     )
 
     if gano:
         puntaje += 500
     else:
-        puntaje += 100
+        puntaje = int(puntaje * 0.5)
 
     puntaje_final = max(0, int(puntaje))
     estado = estado_resultado
@@ -811,12 +817,11 @@ while corriendo:
             if btn_facil.collidepoint(mouse_pos):
                 reproducir_click()
                 dificultad = "facil"
-                # Initialize game controller
                 if rol_elegido == "normal":
                     modo = "escapa"
                 else:
                     modo = "cazador"
-                controlador = ControladorDeJuego(dificultad)
+                controlador = ControladorDeJuego(dificultad, modo)
                 energia_actual = controlador.jugador.energia
                 tiempo_partida = 0.0
                 enemigos_atrapados = 0
@@ -830,7 +835,7 @@ while corriendo:
                     modo = "escapa"
                 else:
                     modo = "cazador"
-                controlador = ControladorDeJuego(dificultad)
+                controlador = ControladorDeJuego(dificultad, modo)
                 energia_actual = controlador.jugador.energia
                 tiempo_partida = 0.0
                 enemigos_atrapados = 0
@@ -844,7 +849,7 @@ while corriendo:
                     modo = "escapa"
                 else:
                     modo = "cazador"
-                controlador = ControladorDeJuego(dificultad)
+                controlador = ControladorDeJuego(dificultad, modo)
                 energia_actual = controlador.jugador.energia
                 tiempo_partida = 0.0
                 enemigos_atrapados = 0
@@ -1076,28 +1081,23 @@ while corriendo:
             estado = estado_menu
             continue
 
-        # Handle movement input with timing
-        tiempo_actual = pygame.time.get_ticks() / 1000.0
         teclas = pygame.key.get_pressed()
 
-        # Movement controls
-        if tiempo_actual - ultimo_movimiento >= velocidad_movimiento:
-            dx, dy = 0, 0
-            correr = teclas[pygame.K_LSHIFT] or teclas[pygame.K_RSHIFT]
+        dx, dy = 0, 0
+        correr = teclas[pygame.K_LSHIFT] or teclas[pygame.K_RSHIFT]
 
-            if teclas[pygame.K_w] or teclas[pygame.K_UP]:
-                dx = -1
-            elif teclas[pygame.K_s] or teclas[pygame.K_DOWN]:
-                dx = 1
+        if teclas[pygame.K_w] or teclas[pygame.K_UP]:
+            dx = -1
+        elif teclas[pygame.K_s] or teclas[pygame.K_DOWN]:
+            dx = 1
 
-            if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
-                dy = -1
-            elif teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
-                dy = 1
+        if teclas[pygame.K_a] or teclas[pygame.K_LEFT]:
+            dy = -1
+        elif teclas[pygame.K_d] or teclas[pygame.K_RIGHT]:
+            dy = 1
 
-            if dx != 0 or dy != 0:
-                controlador.mover_jugador(dx, dy, correr)
-                ultimo_movimiento = tiempo_actual
+        if dx != 0 or dy != 0:
+            controlador.mover_jugador(dx, dy, correr)
 
         if teclas[pygame.K_SPACE]:
             if controlador.colocar_trampa():
@@ -1106,6 +1106,7 @@ while corriendo:
         controlador.actualizar_enemigos()
 
         energia_actual = controlador.jugador.energia
+        enemigos_atrapados = controlador.obtener_enemigos_eliminados()
 
         estado_controlador = controlador.estado_juego()
         if estado_controlador == "victoria":

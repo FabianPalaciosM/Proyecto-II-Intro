@@ -168,8 +168,7 @@ class Enemigo(Entidad):
                 dx = 1
             elif fila_jugador < self.fila:
                 dx = -1
-
-            if columna_jugador > self.columna:
+            elif columna_jugador > self.columna:
                 dy = 1
             elif columna_jugador < self.columna:
                 dy = -1
@@ -179,8 +178,7 @@ class Enemigo(Entidad):
                 dx = -1
             elif fila_jugador < self.fila:
                 dx = 1
-
-            if columna_jugador > self.columna:
+            elif columna_jugador > self.columna:
                 dy = -1
             elif columna_jugador < self.columna:
                 dy = 1

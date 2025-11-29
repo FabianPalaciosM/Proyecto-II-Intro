@@ -1,11 +1,13 @@
 import time
 import config
+import random
 from mapa import generar_mapa_completo
 from entidad import Jugador, Enemigo
 
 
 class ControladorDeJuego:
-    def __init__(self, modo_juego):
+    def __init__(self, dificultad, modo_juego):
+        self.dificultad = dificultad
         self.modo_juego = modo_juego
         self.estado = "jugando"
 
@@ -18,10 +20,13 @@ class ControladorDeJuego:
 
         self.trampas = set()
         self.tiempo_inicio = time.time()
+        self.ultimo_movimiento_enemigos = time.time()
+        self.ultimo_movimiento_jugador = time.time()
+        self.enemigos_eliminados = 0
 
     def crear_enemigos(self):
-        cantidad = config.DIFICULTADES[self.modo_juego]["cantidad_de_enemigos"]
-        velocidad = config.DIFICULTADES[self.modo_juego]["velocidad_enemigo"]
+        cantidad = config.DIFICULTADES[self.dificultad]["cantidad_de_enemigos"]
+        velocidad = config.DIFICULTADES[self.dificultad]["velocidad_enemigo"]
 
         for _ in range(cantidad):
             fila, columna = self.buscar_posicion_spawn_enemigo()
@@ -33,27 +38,57 @@ class ControladorDeJuego:
         filas = len(self.matriz_clases)
         columnas = len(self.matriz_clases[0])
 
-        for i in range(filas - 1, -1, -1):
-            for j in range(columnas - 1, -1, -1):
+        posiciones_validas = []
+        for i in range(filas):
+            for j in range(columnas):
                 if self.matriz_clases[i][j].caminable_por_enemigo():
-                    return (i, j)
+                    posiciones_validas.append((i, j))
+
+        if posiciones_validas:
+            return random.choice(posiciones_validas)
         return (filas - 1, columnas - 1)
 
     def mover_jugador(self, dx, dy, correr=False):
         if not self.jugador.vivo or self.estado != "jugando":
-            return
+            return False
 
+        tiempo_actual = time.time()
+        velocidad_requerida = self.jugador.velocidad_correr if correr else self.jugador.velocidad_caminar
+
+        if tiempo_actual - self.ultimo_movimiento_jugador < velocidad_requerida:
+            return False
+
+        movido = False
         if correr:
-            self.jugador.correr(dx, dy)
+            movido = self.jugador.correr(dx, dy)
         else:
-            self.jugador.mover(dx, dy)
+            movido = self.jugador.mover(dx, dy)
 
-        if self.jugador.posicion() == (len(self.matriz_clases)-1, len(self.matriz_clases[0])-1):
-            self.estado = "victoria"
+        if movido:
+            self.ultimo_movimiento_jugador = tiempo_actual
+
+            fila, columna = self.jugador.posicion()
+            casilla_actual = self.matriz_clases[fila][columna]
+            if casilla_actual.es_salida():
+                self.estado = "victoria"
+
+        return movido
+
+    def verificar_colision_adyacente(self, pos_jugador, pos_enemigo):
+        fila_j, col_j = pos_jugador
+        fila_e, col_e = pos_enemigo
+
+        diferencia_fila = abs(fila_j - fila_e)
+        diferencia_col = abs(col_j - col_e)
+
+        return (diferencia_fila <= 1 and diferencia_col <= 1 and
+                not (diferencia_fila == 0 and diferencia_col == 0))
 
     def actualizar_enemigos(self):
         if self.estado != "jugando":
             return
+
+        tiempo_actual = time.time()
 
         for enemigo in self.enemigos:
             if not enemigo.vivo:
@@ -66,13 +101,26 @@ class ControladorDeJuego:
 
             if (fila_enemigo, columna_enemigo) in self.trampas:
                 enemigo.morir()
+                self.trampas.discard((fila_enemigo, columna_enemigo))
+                self.enemigos_eliminados += 1
                 continue
 
-            dx, dy = enemigo.decidir_movimiento(self.jugador)
-            enemigo.mover(dx, dy, self.jugador)
+            if tiempo_actual - self.ultimo_movimiento_enemigos >= enemigo.velocidad:
+                dx, dy = enemigo.decidir_movimiento(self.jugador)
+                enemigo.mover(dx, dy, self.jugador)
 
-            if not self.jugador.vivo:
-                self.estado = "derrota"
+            if self.modo_juego == "escapa":
+                pos_jugador = self.jugador.posicion()
+                pos_enemigo = enemigo.posicion()
+
+                if (pos_jugador == pos_enemigo or
+                    self.verificar_colision_adyacente(pos_jugador, pos_enemigo)):
+                    self.jugador.morir()
+                    self.estado = "derrota"
+                    break
+
+        if tiempo_actual - self.ultimo_movimiento_enemigos >= min([e.velocidad for e in self.enemigos if e.vivo], default=0.4):
+            self.ultimo_movimiento_enemigos = tiempo_actual
 
     def colocar_trampa(self):
         if self.estado != "jugando":
@@ -97,6 +145,9 @@ class ControladorDeJuego:
 
     def obtener_mapa_render(self):
         return self.matriz_clases
+
+    def obtener_enemigos_eliminados(self):
+        return self.enemigos_eliminados
 
     def estado_juego(self):
         return self.estado

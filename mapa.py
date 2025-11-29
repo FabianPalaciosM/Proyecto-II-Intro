@@ -35,5 +35,3 @@ def generar_mapa_completo():
     matriz_de_clases = convertir_matriz_a_clases(matriz_numerica)
 
     return matriz_numerica, matriz_de_clases
- 
-print(generar_mapa_completo())
