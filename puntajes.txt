@@ -5,3 +5,7 @@ escapa;wasd;1767
 escapa;ed;635
 escapa;wdas;1424
 escapa;das;587
+escapa;wdasd;794
+escapa;wda;772
+escapa;dwasd;1689
+escapa;dwa;1353

@@ -1196,6 +1196,7 @@ while corriendo:
             fuente_subt, color_texto2,
             ancho // 2, rect_interno.bottom - 30
         )
+        dibujar_barra_energia(pantalla, 625, 30, config.ENERGIA_INICIAL, energia_max)
 
         if teclas[pygame.K_ESCAPE]:
             estado = estado_menu
